@@ -48,16 +48,15 @@
             <!-- Section 2: Exchange Rate -->
             <section class="card">
                 <h2>💱 Tỉ Giá</h2>
-                <div class="form-group">
-                    <label for="currencyPair">Chọn cặp tiền:</label>
-                    <select id="currencyPair">
-                        <option value="USD/VND">USD → VND (Đô la Mỹ)</option>
-                        <option value="EUR/VND">EUR → VND (Euro)</option>
-                        <option value="GBP/VND">GBP → VND (Bảng Anh)</option>
-                        <option value="JPY/VND">JPY → VND (Yên Nhật)</option>
-                        <option value="CNY/VND">CNY → VND (Nhân dân tệ)</option>
-                        <option value="AUD/VND">AUD → VND (Đô la Úc)</option>
-                    </select>
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label for="baseCurrency">Tiền tệ gốc (From):</label>
+                        <select id="baseCurrency"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="targetCurrency">Tiền tệ đích (To):</label>
+                        <select id="targetCurrency"></select>
+                    </div>
                 </div>
                 <div class="button-group">
                     <button id="refreshExchangeBtn" class="btn btn-secondary">Làm mới tỷ giá</button>

@@ -252,6 +252,23 @@ if (typeof window !== "undefined") {
   };
 }
 
+// ==================== App Constants ====================
+const ALL_CURRENCIES = [
+  "USD", "VND", "EUR", "GBP", "JPY", "CNY", "AUD", "KRW", "SGD"
+];
+
+const CURRENCY_NAMES = {
+  USD: "US Dollar",
+  VND: "Vietnamese Dong",
+  EUR: "Euro",
+  GBP: "British Pound",
+  JPY: "Japanese Yen",
+  CNY: "Chinese Yuan",
+  AUD: "Australian Dollar",
+  KRW: "South Korean Won",
+  SGD: "Singapore Dollar",
+};
+
 // ==================== API Calls ====================
 
 /**
@@ -268,7 +285,13 @@ async function apiCall(endpoint, options = {}) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(errorJson.error || `HTTP error! status: ${response.status}`);
+      } catch (e) {
+        throw new Error(errorText || `HTTP error! status: ${response.status}`);
+      }
     }
 
     return await response.json();
@@ -336,10 +359,15 @@ async function loadCurrentWeather() {
  * Lấy dữ liệu tỉ giá hiện tại
  */
 async function loadCurrentExchange() {
-  try {
-    const currencyPair = document.getElementById("currencyPair").value;
-    const [base, target] = currencyPair.split("/");
+  const base = document.getElementById("baseCurrency").value;
+  const target = document.getElementById("targetCurrency").value;
+  
+  if (base === target) {
+    document.getElementById("exchangeDisplay").innerHTML = '<p class="loading">Tiền tệ gốc và đích không được trùng nhau.</p>';
+    return;
+  }
 
+  try {
     const result = await apiCall(
       `/api/exchange/current?base=${base}&target=${target}`
     );
@@ -350,10 +378,10 @@ async function loadCurrentExchange() {
                 <div class="data-item">
                     <strong>Cặp tiền:</strong> ${data.base_currency}/${
         data.target_currency
-      }
+      } ${data.converted ? "(Converted)" : ""}
                 </div>
                 <div class="data-item">
-                    <strong>Tỉ giá:</strong> ${data.rate.toFixed(2)}
+                    <strong>Tỉ giá:</strong> ${data.rate.toFixed(4)}
                 </div>
                 <div class="data-item">
                     <strong>Thời gian:</strong> ${new Date(
@@ -363,11 +391,11 @@ async function loadCurrentExchange() {
             `;
     } else {
       document.getElementById("exchangeDisplay").innerHTML =
-        '<p class="loading">Chưa có dữ liệu</p>';
+        '<p class="loading">Chưa có dữ liệu cho cặp tiền này.</p>';
     }
   } catch (error) {
     document.getElementById("exchangeDisplay").innerHTML =
-      '<p class="loading" style="color: red;">Lỗi tải dữ liệu</p>';
+      `<p class="loading" style="color: red;">Lỗi tải dữ liệu: ${error.message}</p>`;
   }
 }
 
@@ -409,8 +437,14 @@ async function handleUpdateLocation() {
  * Hiển thị tỷ giá lên LED
  */
 async function handleDisplayExchange() {
-  const currencyPair = document.getElementById("currencyPair").value;
-  const [base, target] = currencyPair.split("/");
+  const base = document.getElementById("baseCurrency").value;
+  const target = document.getElementById("targetCurrency").value;
+  const currencyPair = `${base}/${target}`;
+  
+  if (base === target) {
+    alert("Tiền tệ gốc và đích không được trùng nhau.");
+    return;
+  }
 
   const btn = document.getElementById("displayExchangeBtn");
   btn.disabled = true;
@@ -601,11 +635,18 @@ async function handleCalculateExchangeHistory() {
   const minutesInput = document.getElementById("exchangeHistoryMinutes");
   const resultDiv = document.getElementById("exchangeHistoryResult");
   const btn = document.getElementById("calculateExchangeHistoryBtn");
-  const currencyPair = document.getElementById("currencyPair").value; // Reuse the main currency selector
+  const base = document.getElementById("baseCurrency").value;
+  const target = document.getElementById("targetCurrency").value;
+  const currencyPair = `${base}/${target}`;
   const minutes = minutesInput.value;
 
   if (!minutes || minutes < 1) {
     alert("Vui lòng nhập số phút hợp lệ.");
+    return;
+  }
+  
+  if (base === target) {
+    alert("Tiền tệ gốc và đích không được trùng nhau.");
     return;
   }
 
@@ -624,7 +665,7 @@ async function handleCalculateExchangeHistory() {
             <strong>Kết quả cho ${data.count} bản ghi của cặp ${currencyPair} trong ${minutes} phút qua:</strong>
         </div>
         <div class="data-item">
-            - Tỉ giá trung bình: <strong>${data.avg_rate.toFixed(2)}</strong>
+            - Tỉ giá trung bình: <strong>${data.avg_rate.toFixed(4)}</strong>
         </div>
       `;
     } else {
@@ -645,11 +686,13 @@ let autoStep = 0;
 
 const AUTO_CURRENCIES = [
   "USD/VND",
-  "EUR/VND",
-  "GBP/VND",
-  "JPY/VND",
-  "CNY/VND",
-  "AUD/VND",
+  "USD/EUR",
+  "USD/GBP",
+  "USD/JPY",
+  "USD/CNY",
+  "USD/AUD",
+  "USD/KRW",
+  "USD/SGD"
 ];
 const AUTO_DELAY = 5000; // 5 giây mỗi bước
 
@@ -746,6 +789,29 @@ function updateAutoStatus(text, status) {
 // ==================== Initialization ====================
 
 /**
+ * Đổ dữ liệu tiền tệ vào dropdown
+ */
+function populateCurrencies() {
+  const baseSelect = document.getElementById("baseCurrency");
+  const targetSelect = document.getElementById("targetCurrency");
+
+  ALL_CURRENCIES.forEach(currency => {
+    const optionText = `${currency} (${CURRENCY_NAMES[currency] || ''})`;
+    
+    const baseOption = new Option(optionText, currency);
+    baseSelect.add(baseOption);
+
+    const targetOption = new Option(optionText, currency);
+    targetSelect.add(targetOption);
+  });
+
+  // Set default values
+  baseSelect.value = "USD";
+  targetSelect.value = "VND";
+}
+
+
+/**
  * Khởi tạo ứng dụng
  */
 function init() {
@@ -755,6 +821,9 @@ function init() {
 
   // Kết nối MQTT
   connectMQTT();
+
+  // Đổ dữ liệu tiền tệ
+  populateCurrencies();
 
   // Load dữ liệu ban đầu
   loadCurrentWeather();
@@ -770,9 +839,8 @@ function init() {
     .addEventListener("click", handleUpdateLocation);
 
   // Event listeners - Exchange
-  document
-    .getElementById("currencyPair")
-    .addEventListener("change", loadCurrentExchange);
+  document.getElementById("baseCurrency").addEventListener("change", loadCurrentExchange);
+  document.getElementById("targetCurrency").addEventListener("change", loadCurrentExchange);
   document
     .getElementById("refreshExchangeBtn")
     .addEventListener("click", loadCurrentExchange);
