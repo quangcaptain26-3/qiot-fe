@@ -3,7 +3,8 @@
  * Kết nối MQTT, gọi API, điều khiển LED
  */
 
-const API_BASE = window.location.origin;
+// Backend API URL
+const API_BASE = "https://qiot-be.onrender.com";
 // WebSocket MQTT - EMQX Broker với TLS/SSL
 const MQTT_BROKER = `wss://z0d3bf33.ala.asia-southeast1.emqxsl.com:8084/mqtt`;
 const MQTT_USERNAME = "qiot-fe";

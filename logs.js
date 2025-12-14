@@ -3,7 +3,8 @@
  * Hiển thị lịch sử dữ liệu và MQTT logs
  */
 
-const API_BASE = window.location.origin;
+// Backend API URL
+const API_BASE = "https://qiot-be.onrender.com";
 
 // ==================== Tab Management ====================
 
@@ -185,7 +186,7 @@ async function loadMqttLogs() {
 
   try {
     const topicFilter = document.getElementById("topicFilter").value;
-    
+
     // Lấy logs từ backend
     let backendLogs = [];
     try {
@@ -193,12 +194,12 @@ async function loadMqttLogs() {
         ? `/api/logs?limit=100&topic=${encodeURIComponent(topicFilter)}`
         : "/api/logs?limit=100";
       const result = await apiCall(endpoint);
-      backendLogs = result.data.map(item => ({
+      backendLogs = result.data.map((item) => ({
         timestamp: item.created_at,
         topic: item.topic,
         message: item.message,
         direction: item.direction,
-        source: "backend"
+        source: "backend",
       }));
     } catch (error) {
       console.warn("⚠️  Không thể load backend logs:", error);
@@ -207,18 +208,17 @@ async function loadMqttLogs() {
     // Lấy logs từ frontend (localStorage)
     let frontendLogs = [];
     try {
-      frontendLogs = getFrontendLogs()
-        .map(item => ({
-          timestamp: item.timestamp,
-          topic: item.topic,
-          message: item.message,
-          direction: item.direction,
-          source: "frontend"
-        }));
+      frontendLogs = getFrontendLogs().map((item) => ({
+        timestamp: item.timestamp,
+        topic: item.topic,
+        message: item.message,
+        direction: item.direction,
+        source: "frontend",
+      }));
 
       // Apply topic filter nếu có
       if (topicFilter) {
-        frontendLogs = frontendLogs.filter(log => 
+        frontendLogs = frontendLogs.filter((log) =>
           log.topic.toLowerCase().includes(topicFilter.toLowerCase())
         );
       }
@@ -246,14 +246,17 @@ async function loadMqttLogs() {
           item.message.length > 50
             ? item.message.substring(0, 50) + "..."
             : item.message;
-        
-        const sourceBadge = item.source === "frontend" 
-          ? '<span style="color: #4CAF50; font-size: 0.8em;">[FE]</span>' 
-          : '<span style="color: #2196F3; font-size: 0.8em;">[BE]</span>';
+
+        const sourceBadge =
+          item.source === "frontend"
+            ? '<span style="color: #4CAF50; font-size: 0.8em;">[FE]</span>'
+            : '<span style="color: #2196F3; font-size: 0.8em;">[BE]</span>';
 
         return `
                 <tr>
-                    <td>${new Date(item.timestamp).toLocaleString("vi-VN")} ${sourceBadge}</td>
+                    <td>${new Date(item.timestamp).toLocaleString(
+                      "vi-VN"
+                    )} ${sourceBadge}</td>
                     <td>${item.topic}</td>
                     <td title="${item.message}">${message}</td>
                     <td>${item.direction}</td>
@@ -261,8 +264,10 @@ async function loadMqttLogs() {
             `;
       })
       .join("");
-    
-    console.log(`📊 Đã load ${backendLogs.length} backend logs + ${frontendLogs.length} frontend logs`);
+
+    console.log(
+      `📊 Đã load ${backendLogs.length} backend logs + ${frontendLogs.length} frontend logs`
+    );
   } catch (error) {
     tbody.innerHTML = `<tr><td colspan="4" class="loading" style="color: red;">Lỗi: ${error.message}</td></tr>`;
   }
@@ -293,13 +298,17 @@ function initEventHandlers() {
   });
 
   // Clear frontend logs
-  document.getElementById("clearFrontendLogsBtn")?.addEventListener("click", () => {
-    if (confirm("Bạn có chắc muốn xóa tất cả logs frontend (localStorage)?")) {
-      localStorage.removeItem("mqtt_logs");
-      alert("✅ Đã xóa logs frontend!");
-      loadMqttLogs(); // Reload để cập nhật
-    }
-  });
+  document
+    .getElementById("clearFrontendLogsBtn")
+    ?.addEventListener("click", () => {
+      if (
+        confirm("Bạn có chắc muốn xóa tất cả logs frontend (localStorage)?")
+      ) {
+        localStorage.removeItem("mqtt_logs");
+        alert("✅ Đã xóa logs frontend!");
+        loadMqttLogs(); // Reload để cập nhật
+      }
+    });
 }
 
 // ==================== Initialization ====================
