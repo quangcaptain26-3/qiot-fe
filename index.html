@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT LED Matrix Control</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 IoT LED Matrix Control</h1>
+            <p class="subtitle">Điều khiển ESP8266 + MAX7219 qua MQTT</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-label">MQTT:</span>
+                <span id="mqttStatus" class="status-value disconnected">Disconnected</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Server:</span>
+                <span id="serverStatus" class="status-value">Checking...</span>
+            </div>
+        </div>
+
+        <main>
+            <!-- Section 1: Weather Control -->
+            <section class="card">
+                <h2>🌤️ Thời Tiết</h2>
+                <div class="form-group">
+                    <label for="latitude">Vĩ độ (Latitude):</label>
+                    <input type="number" id="latitude" step="0.000001" value="10.762622" placeholder="10.762622">
+                </div>
+                <div class="form-group">
+                    <label for="longitude">Kinh độ (Longitude):</label>
+                    <input type="number" id="longitude" step="0.000001" value="106.660172" placeholder="106.660172">
+                </div>
+                <button id="updateLocationBtn" class="btn btn-primary">Cập nhật vị trí</button>
+
+                <div id="weatherDisplay" class="data-display">
+                    <p class="loading">Đang tải dữ liệu...</p>
+                </div>
+            </section>
+
+            <!-- Section 2: Exchange Rate -->
+            <section class="card">
+                <h2>💱 Tỉ Giá</h2>
+                <div class="form-group">
+                    <label for="currencyPair">Chọn cặp tiền:</label>
+                    <select id="currencyPair">
+                        <option value="USD/VND">USD → VND (Đô la Mỹ)</option>
+                        <option value="EUR/VND">EUR → VND (Euro)</option>
+                        <option value="GBP/VND">GBP → VND (Bảng Anh)</option>
+                        <option value="JPY/VND">JPY → VND (Yên Nhật)</option>
+                        <option value="CNY/VND">CNY → VND (Nhân dân tệ)</option>
+                        <option value="AUD/VND">AUD → VND (Đô la Úc)</option>
+                    </select>
+                </div>
+                <div class="button-group">
+                    <button id="refreshExchangeBtn" class="btn btn-secondary">Làm mới tỷ giá</button>
+                    <button id="displayExchangeBtn" class="btn btn-primary">Hiển thị lên LED</button>
+                </div>
+                <div id="exchangeDisplay" class="data-display">
+                    <p class="loading">Đang tải dữ liệu...</p>
+                </div>
+            </section>
+
+            <!-- Section 3: Auto Display -->
+            <section class="card highlight-card">
+                <h2>🔄 Chế Độ Tự Động</h2>
+                <p class="subtitle">Tự động hiển thị: Thời gian → Thời tiết → Tất cả tỷ giá</p>
+                <div class="button-group">
+                    <button id="autoDisplayBtn" class="btn btn-success btn-large">▶️ Bắt đầu AUTO</button>
+                    <button id="stopAutoBtn" class="btn btn-danger btn-large" disabled>⏹️ Dừng AUTO</button>
+                </div>
+                <div id="autoStatus" class="auto-status">
+                    <span class="status-label">Trạng thái:</span>
+                    <span id="autoStatusText" class="status-value">Chưa chạy</span>
+                </div>
+            </section>
+
+            <!-- Section 4: Custom Message -->
+            <section class="card">
+                <h2>✉️ Custom Message</h2>
+                <div class="form-group">
+                    <label for="customMessage">Nhập message:</label>
+                    <input type="text" id="customMessage" placeholder="Nhập text để hiển thị trên LED...">
+                </div>
+                <div class="form-group">
+                    <label for="messageMode">Chế độ:</label>
+                    <select id="messageMode">
+                        <option value="">Mặc định</option>
+                        <option value="scroll_left">Scroll Trái</option>
+                        <option value="scroll_right">Scroll Phải</option>
+                        <option value="blink">Blink</option>
+                    </select>
+                </div>
+                <button id="sendMessageBtn" class="btn btn-primary">Gửi Message</button>
+            </section>
+
+            <!-- Section 5: LED Settings -->
+            <section class="card">
+                <h2>⚙️ Cài Đặt LED</h2>
+
+                <!-- Tốc độ cuộn -->
+                <div class="setting-group">
+                    <h3>🏃 Tốc Độ Cuộn</h3>
+                    <div class="form-group">
+                        <label for="ledSpeed">Điều chỉnh tốc độ:</label>
+                        <div class="speed-control">
+                            <span class="speed-label">Chậm</span>
+                            <input type="range" id="ledSpeed" min="0" max="100" value="50">
+                            <span class="speed-label">Nhanh</span>
+                        </div>
+                        <div class="speed-display">
+                            <span>Giá trị hiện tại: <strong id="speedValue">50</strong></span>
+                        </div>
+                    </div>
+                    <button id="applySpeedBtn" class="btn btn-primary">✓ Áp dụng tốc độ</button>
+                </div>
+
+                <!-- Độ sáng -->
+                <div class="setting-group">
+                    <h3>💡 Độ Sáng</h3>
+                    <div class="form-group">
+                        <label for="ledBrightness">Điều chỉnh độ sáng:</label>
+                        <div class="brightness-control">
+                            <span class="brightness-label">Tối</span>
+                            <input type="range" id="ledBrightness" min="1" max="15" value="8">
+                            <span class="brightness-label">Sáng</span>
+                        </div>
+                        <div class="brightness-display">
+                            <span>Giá trị hiện tại: <strong id="brightnessValue">8</strong></span>
+                        </div>
+                    </div>
+                    <button id="applyBrightnessBtn" class="btn btn-primary">✓ Áp dụng độ sáng</button>
+                </div>
+
+                <!-- Chế độ hiển thị -->
+                <div class="setting-group">
+                    <h3>🎭 Chế Độ Hiển Thị</h3>
+                    <div class="form-group">
+                        <label for="ledMode">Chọn chế độ:</label>
+                        <select id="ledMode">
+                            <option value="">Không đổi</option>
+                            <option value="scroll_left">Scroll Trái</option>
+                            <option value="scroll_right">Scroll Phải</option>
+                            <option value="blink">Blink</option>
+                        </select>
+                    </div>
+                    <button id="applyModeBtn" class="btn btn-primary">✓ Áp dụng chế độ</button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <a href="logs.html" class="btn btn-link">📊 Xem Logs</a>
+        </footer>
+    </div>
+
+    <!-- MQTT.js library for WebSocket connection -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
