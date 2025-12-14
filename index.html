@@ -156,6 +156,33 @@
             </section>
         </main>
 
+        <section class="card">
+            <h2>📊 Lịch Sử Dữ Liệu</h2>
+            <p class="subtitle">Tính toán giá trị trung bình trong khoảng thời gian đã qua.</p>
+
+            <!-- Weather History -->
+            <div class="history-group">
+                <h3>🌤️ Lịch sử Thời tiết</h3>
+                <div class="form-group">
+                    <label for="weatherHistoryMinutes">Nhập số phút (tính từ bây giờ):</label>
+                    <input type="number" id="weatherHistoryMinutes" min="1" placeholder="Ví dụ: 60">
+                </div>
+                <button id="calculateWeatherHistoryBtn" class="btn btn-secondary">Tính trung bình</button>
+                <div id="weatherHistoryResult" class="data-display" style="display:none;"></div>
+            </div>
+
+            <!-- Exchange Rate History -->
+            <div class="history-group">
+                <h3>💱 Lịch sử Tỉ Giá</h3>
+                <div class="form-group">
+                    <label for="exchangeHistoryMinutes">Nhập số phút (tính từ bây giờ):</label>
+                    <input type="number" id="exchangeHistoryMinutes" min="1" placeholder="Ví dụ: 60">
+                </div>
+                <button id="calculateExchangeHistoryBtn" class="btn btn-secondary">Tính trung bình</button>
+                <div id="exchangeHistoryResult" class="data-display" style="display:none;"></div>
+            </div>
+        </section>
+
         <footer>
             <a href="logs.html" class="btn btn-link">📊 Xem Logs</a>
         </footer>

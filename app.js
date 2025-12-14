@@ -543,6 +543,101 @@ async function handleApplyMode() {
   }
 }
 
+// ==================== History Functions ====================
+
+/**
+ * Tính toán và hiển thị lịch sử thời tiết trung bình
+ */
+async function handleCalculateWeatherHistory() {
+  const minutesInput = document.getElementById("weatherHistoryMinutes");
+  const resultDiv = document.getElementById("weatherHistoryResult");
+  const btn = document.getElementById("calculateWeatherHistoryBtn");
+  const minutes = minutesInput.value;
+
+  if (!minutes || minutes < 1) {
+    alert("Vui lòng nhập số phút hợp lệ.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Đang tính toán...";
+  resultDiv.style.display = "block";
+  resultDiv.innerHTML = `<p class="loading">Đang tải dữ liệu lịch sử...</p>`;
+
+  try {
+    const result = await apiCall(`/api/weather/history/average?minutes=${minutes}`);
+    const data = result.data;
+
+    if (data && data.count > 0) {
+      resultDiv.innerHTML = `
+        <div class="data-item">
+            <strong>Kết quả cho ${data.count} bản ghi trong ${minutes} phút qua:</strong>
+        </div>
+        <div class="data-item">
+            - Nhiệt độ TB: <strong>${data.avg_temperature.toFixed(2)}°C</strong>
+        </div>
+        <div class="data-item">
+            - Độ ẩm TB: <strong>${data.avg_humidity.toFixed(2)}%</strong>
+        </div>
+        <div class="data-item">
+            - Áp suất TB: <strong>${data.avg_pressure.toFixed(2)} hPa</strong>
+        </div>
+      `;
+    } else {
+      resultDiv.innerHTML = `<p class="loading">Không tìm thấy dữ liệu trong khoảng thời gian đã chọn.</p>`;
+    }
+  } catch (error) {
+    resultDiv.innerHTML = `<p class="loading" style="color: red;">Lỗi tính toán: ${error.message}</p>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Tính trung bình";
+  }
+}
+
+/**
+ * Tính toán và hiển thị lịch sử tỉ giá trung bình
+ */
+async function handleCalculateExchangeHistory() {
+  const minutesInput = document.getElementById("exchangeHistoryMinutes");
+  const resultDiv = document.getElementById("exchangeHistoryResult");
+  const btn = document.getElementById("calculateExchangeHistoryBtn");
+  const currencyPair = document.getElementById("currencyPair").value; // Reuse the main currency selector
+  const minutes = minutesInput.value;
+
+  if (!minutes || minutes < 1) {
+    alert("Vui lòng nhập số phút hợp lệ.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Đang tính toán...";
+  resultDiv.style.display = "block";
+  resultDiv.innerHTML = `<p class="loading">Đang tải dữ liệu lịch sử...</p>`;
+
+  try {
+    const result = await apiCall(`/api/exchange/history/average?minutes=${minutes}&pair=${currencyPair}`);
+    const data = result.data;
+
+    if (data && data.count > 0) {
+      resultDiv.innerHTML = `
+        <div class="data-item">
+            <strong>Kết quả cho ${data.count} bản ghi của cặp ${currencyPair} trong ${minutes} phút qua:</strong>
+        </div>
+        <div class="data-item">
+            - Tỉ giá trung bình: <strong>${data.avg_rate.toFixed(2)}</strong>
+        </div>
+      `;
+    } else {
+      resultDiv.innerHTML = `<p class="loading">Không tìm thấy dữ liệu cho cặp ${currencyPair} trong khoảng thời gian đã chọn.</p>`;
+    }
+  } catch (error) {
+    resultDiv.innerHTML = `<p class="loading" style="color: red;">Lỗi tính toán: ${error.message}</p>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Tính trung bình";
+  }
+}
+
 // ==================== AUTO MODE ====================
 
 let autoInterval = null;
@@ -692,6 +787,15 @@ function init() {
   document
     .getElementById("stopAutoBtn")
     .addEventListener("click", stopAutoMode);
+
+  // Event listeners - History
+  document
+    .getElementById("calculateWeatherHistoryBtn")
+    .addEventListener("click", handleCalculateWeatherHistory);
+
+  document
+    .getElementById("calculateExchangeHistoryBtn")
+    .addEventListener("click", handleCalculateExchangeHistory);
 
   // Event listeners - Custom Message
   document
